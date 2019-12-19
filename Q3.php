@@ -1,4 +1,5 @@
 <?php
+//Customer Class
 class Customer
 {
 	    /**

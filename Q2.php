@@ -1,54 +1,54 @@
 <?php
-//function to display the array
-function displayArray($array){
-    $keys = array_keys($array);
-    for($i = 0; $i < count($array); $i++) {
-        $p = $i+1;
-        echo "Passenger ".$p . "\n";
-        foreach($array[$keys[$i]] as $key => $value) {
-            if(is_array($value)) //if the value is itself an array, begin the digging
-            {
-                $newKey = "";
-                $uc = explode("_", $key); //break up the keys so each can be capitalized
-                foreach($uc as $ucVal){
-                    $newKey .= ucfirst($ucVal)." ";
+
+function sortBy(&$array,$sortValue,$sortValue2 = null)
+{
+    $field1 = "";
+    function array_search_id($search_value,$array, $array2){ //sub function to find the path to the key that is going to be used for sorting
+        if(is_array($array) && count($array) > 0) { //make sure the array is actually an array
+            foreach($array as $key => $value) { 
+                $temp_path = $array2; //store the starting array into the path value;
+                $key1 = "";
+                if(!is_numeric($key)){
+                    $key1 = "'".$key."'"; //if the key isn't numeric, enclose it in single quotes
+                }else{
+                    $key1 = $key; //otherwise, just leave the key as it is
                 }
-                echo $newKey."\n"; //echo the key (name of the sub array)
-                $keys1 = array_keys($value);
-                for($j=0;$j < count($value);$j++){
-                //echo $keys1[$j] . "\n";
-                    foreach($value[$keys1[$j]] as $key1 => $value1) {
-                        $newKey = "";
-                        $uc = explode("_", $key1); //break up the keys so each can be capitalized
-                        foreach($uc as $ucVal){
-                            $newKey .= ucfirst($ucVal)." ";
-                        }   
-                        if($value1 === true){
-                            $newValue = 'Yes';
-                        }else{
-                            $newValue = $value1;
-                        }
-                        echo $newKey . " : " . $newValue . "\n"; //display the Key and Value in a human readable format
-                    }
-                }
-            }else{ //if the value was not an array, no need to dig
-             $newKey = "";
-             $uc = explode("_", $key); //break up the keys so each can be capitalized
-             foreach($uc as $ucVal){
-                $newKey .= ucfirst($ucVal)." ";
-            }
-            if($value === true){
-                $newValue = 'Yes';
-            }else{
-                $newValue = $value;
-            }
-            echo $newKey . " : " . $newValue . "\n"; //display the Key and Value in a human readable format
+                array_push($temp_path, "[".$key1."]"); //push the newest path value onto the path array
+                if(is_array($value) && count($value) > 0) {  //if the value is itself an array, call the search again
+                    $res_path = array_search_id($search_value, $value, $temp_path); 
+                    if ($res_path != null) { 
+                        return $res_path; 
+                    } 
+                } 
+                else if($key === $search_value) {  //if we found the key we are looking for, return the search path 
+                    return $temp_path; 
+                } 
+            } 
         }
     }
+    $sortVal = explode(",", $sortValue); 
+    foreach($sortVal as $sortValue){
+    $temp_path1 = array_search_id($sortValue, $array,array());  //get the path for the key value we want to sort on
+    $field1 = "";
+    array_shift($temp_path1);
+    foreach($temp_path1 as $test){ //convert the path array into a string so it can be passed to the sorting
+        $field1 .=$test;
+    }
+    //sort the array 
+    usort($array, create_function('$a, $b', '
+        $a = $a'.$field1.';
+        $b = $b'.$field1.';
+        if ($a == $b) return 0;
+        return ($a  > $b) ? -1 : 1;
+        '));
+    echo "Sorted Array: \n";
+    print_r($array);
     echo "\n";
 }
+return true;
 }
 
+//Passengers list array
 $passengers =
 array (  
     array (
@@ -167,7 +167,17 @@ array (
     ),
 );
 try{
-    $passengerList = displayArray($passengers);
+    echo "ORIGINAL ARRAY \n";
+//Display the list before it has been sorted
+    print_r($passengers);
+    echo "SORTING \n\n"; //inform that the list is about to be sorted
+    if (!isset($argv[1]) || empty($argv[1])) {
+        $sortedPassengerList = sortBy($passengers,'account_id'); 
+    }
+    else{
+        $sortedPassengerList = sortBy($passengers,$argv[1]);  
+    }
 }catch ( Exception $e ) {
     die( $e->getMessage() );
 }
+?>
